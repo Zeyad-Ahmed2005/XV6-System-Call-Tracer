@@ -159,11 +159,11 @@ syscall(void)
     p->trapframe->a0 = syscalls[num]();
 
     if(traced) {
-      printf("pid %d: syscall %s -> %d [%llu]\n",
+      printf("pid %d: syscall %s -> %d [%lu]\n",
              p->pid,
              syscall_names[num],
              (int)p->trapframe->a0,
-             r_time() - t0);
+             (unsigned long)(r_time() - t0));
     }
   } else {
     printf("%d %s: unknown sys call %d\n",

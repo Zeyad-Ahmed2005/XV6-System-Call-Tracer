@@ -170,7 +170,7 @@ User runs: trace 32 grep hello README
                 │
             yes │
                 ▼
-        printf("pid %d: syscall %s -> %d [%llu]\n")
+        printf("pid %d: syscall %s -> %d [%lu]\n")
         (duration = r_time() after − r_time() before handler)
 ```
 
