@@ -21,6 +21,70 @@ This project demonstrates:
 
 ---
 
+# How to Run This Project
+
+xv6 runs inside QEMU. You need a Linux-like environment (Linux, macOS, or [WSL](https://learn.microsoft.com/en-us/windows/wsl/) on Windows) with the RISC-V toolchain and QEMU installed.
+
+## Prerequisites
+
+1. **RISC-V GNU toolchain** — cross-compiler and binutils for `riscv64-unknown-elf` (or `riscv64-linux-gnu`). Install from the [riscv-gnu-toolchain](https://github.com/riscv/riscv-gnu-toolchain) repo and ensure `riscv64-unknown-elf-gcc` (or equivalent) is on your `PATH`.
+
+2. **QEMU** — build or install QEMU with the `riscv64-softmmu` target so `qemu-system-riscv64` is available.
+
+On Debian/Ubuntu (including WSL), you can often install dependencies with:
+
+```bash
+sudo apt-get install git build-essential python3 gdb-multiarch \
+  qemu-system-misc gcc-riscv64-linux-gnu binutils-riscv64-linux-gnu
+```
+
+## Build and start xv6
+
+From the project root:
+
+```bash
+make qemu
+```
+
+This compiles the kernel and user programs (including `trace`), builds the filesystem image, and boots xv6 in QEMU. You should see an `$` shell prompt inside the emulator.
+
+To exit QEMU, press `Ctrl-a` then `x`.
+
+Other useful targets:
+
+| Command       | Description                                      |
+| ------------- | ------------------------------------------------ |
+| `make qemu`   | Full rebuild of `fs.img` and boot                |
+| `make qemu-fs`| Boot using an existing `fs.img` (faster rebuild) |
+| `make clean`  | Remove build artifacts                           |
+
+## Run the tracer
+
+At the xv6 `$` prompt, use the `trace` command (see [Example Usage](#example-usage) below):
+
+```bash
+trace 32 grep hello README
+```
+
+You should see lines like:
+
+```text
+pid 4: syscall read -> 512
+pid 4: syscall write -> 512
+```
+
+## Run automated tests
+
+The lab is configured as `LAB=syscall` in `conf/lab.mk`. To run the grading script:
+
+```bash
+make grade
+```
+
+This runs `grade-lab-syscall` (requires Python 3). Close any other xv6/QEMU instance first, or `make clean` inside the grade step may fail.
+
+---
+
 # What Is a System Call?
 
 When a user program wants to perform an operation that requires operating system privileges (such as reading files, writing to the screen, creating processes, etc.), it cannot do it directly.
