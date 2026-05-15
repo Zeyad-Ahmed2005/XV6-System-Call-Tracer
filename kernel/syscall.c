@@ -7,6 +7,10 @@
 #include "syscall.h"
 #include "defs.h"
 
+// clockintr() schedules the next timer at r_time()+1000000; trap.c says that
+// interval is ~0.1s (~100ms), so ~10000 CSR ticks counts as ~1ms (approximate).
+#define TIME_CSR_UNITS_PER_MS 10000UL
+
 // Fetch the uint64 at addr from the current process.
 int
 fetchaddr(uint64 addr, uint64 *ip)
@@ -159,11 +163,13 @@ syscall(void)
     p->trapframe->a0 = syscalls[num]();
 
     if(traced) {
-      printf("pid %d: syscall %s -> %d [%lu]\n",
+      uint64 dt = r_time() - t0;
+      unsigned long ms = (unsigned long)(dt / TIME_CSR_UNITS_PER_MS);
+      printf("pid %d: syscall %s -> %d %lu milliseconds\n",
              p->pid,
              syscall_names[num],
              (int)p->trapframe->a0,
-             (unsigned long)(r_time() - t0));
+             ms);
     }
   } else {
     printf("%d %s: unknown sys call %d\n",

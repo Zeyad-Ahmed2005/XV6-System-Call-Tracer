@@ -11,7 +11,7 @@ The tracer monitors and logs system calls made by a process during execution. Wh
 * Process ID (`pid`)
 * System call name
 * Return value
-* Duration (`Δt`): elapsed `time` CSR ticks between syscall entry and return (similar in spirit to `strace -T`; blocking syscalls include wait time)
+* Duration (`Δt`): approximate wall time from syscall entry to return, printed in **milliseconds** (derived from the `time` CSR using the same scale as the timer in `kernel/trap.c`; blocking syscalls include wait time)
 
 This project demonstrates:
 
@@ -70,11 +70,11 @@ trace 32 grep hello README
 You should see lines like:
 
 ```text
-pid 4: syscall read -> 512 [12345]
-pid 4: syscall write -> 512 [6789]
+pid 4: syscall read -> 512 1 milliseconds
+pid 4: syscall write -> 512 0 milliseconds
 ```
 
-The value in brackets is the syscall duration in RISC-V `time` CSR units (platform-dependent; compare relative sizes across syscalls).
+Durations are **approximate**: the kernel converts CSR ticks to ms using `TIME_CSR_UNITS_PER_MS` (10000), matching xv6’s timer step of `1000000` ticks ≈ 100 ms described in `kernel/trap.c`.
 
 ## Run automated tests
 
@@ -130,9 +130,9 @@ This is similar to the real Linux `strace` utility.
 Example output:
 
 ```text
-pid 4: syscall read -> 512 [8901]
-pid 4: syscall write -> 512 [4500]
-pid 4: syscall exit -> 0 [1200]
+pid 4: syscall read -> 512 0 milliseconds
+pid 4: syscall write -> 512 0 milliseconds
+pid 4: syscall exit -> 0 0 milliseconds
 ```
 
 ---
@@ -170,8 +170,8 @@ User runs: trace 32 grep hello README
                 │
             yes │
                 ▼
-        printf("pid %d: syscall %s -> %d [%lu]\n")
-        (duration = r_time() after − r_time() before handler)
+        printf("pid %d: syscall %s -> %d %lu milliseconds\n")
+        (CSR delta / TIME_CSR_UNITS_PER_MS)
 ```
 
 ---
@@ -274,7 +274,7 @@ If enabled:
 
 * print syscall information (including duration)
 
-Timing uses the RISC-V `time` CSR (`r_time()` in `kernel/riscv.h`): the dispatcher reads it immediately before invoking the syscall handler and again after it returns, and prints the difference together with the return value.
+Timing uses the RISC-V `time` CSR (`r_time()` in `kernel/riscv.h`): the dispatcher reads it immediately before invoking the syscall handler and again after it returns. The printed **milliseconds** value is `(after − before) / TIME_CSR_UNITS_PER_MS`, where `TIME_CSR_UNITS_PER_MS` is 10000 so it lines up with xv6’s comment that adding `1000000` to `stimecmp` is about one tenth of a second (`kernel/trap.c`).
 
 ---
 
