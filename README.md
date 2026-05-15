@@ -11,6 +11,7 @@ The tracer monitors and logs system calls made by a process during execution. Wh
 * Process ID (`pid`)
 * System call name
 * Return value
+* Duration (`Δt`): elapsed `time` CSR ticks between syscall entry and return (similar in spirit to `strace -T`; blocking syscalls include wait time)
 
 This project demonstrates:
 
@@ -69,9 +70,11 @@ trace 32 grep hello README
 You should see lines like:
 
 ```text
-pid 4: syscall read -> 512
-pid 4: syscall write -> 512
+pid 4: syscall read -> 512 [12345]
+pid 4: syscall write -> 512 [6789]
 ```
+
+The value in brackets is the syscall duration in RISC-V `time` CSR units (platform-dependent; compare relative sizes across syscalls).
 
 ## Run automated tests
 
@@ -120,15 +123,16 @@ Whenever the process performs a syscall, the tracer prints:
 * which process made it
 * which syscall was called
 * what value it returned
+* how long the syscall took (entry to exit)
 
 This is similar to the real Linux `strace` utility.
 
 Example output:
 
 ```text
-pid 4: syscall read -> 512
-pid 4: syscall write -> 512
-pid 4: syscall exit -> 0
+pid 4: syscall read -> 512 [8901]
+pid 4: syscall write -> 512 [4500]
+pid 4: syscall exit -> 0 [1200]
 ```
 
 ---
@@ -166,7 +170,8 @@ User runs: trace 32 grep hello README
                 │
             yes │
                 ▼
-        printf("pid %d: syscall %s -> %d\n")
+        printf("pid %d: syscall %s -> %d [%llu]\n")
+        (duration = r_time() after − r_time() before handler)
 ```
 
 ---
@@ -267,7 +272,9 @@ if ((p->tracemask >> num) & 1)
 
 If enabled:
 
-* print syscall information
+* print syscall information (including duration)
+
+Timing uses the RISC-V `time` CSR (`r_time()` in `kernel/riscv.h`): the dispatcher reads it immediately before invoking the syscall handler and again after it returns, and prints the difference together with the return value.
 
 ---
 
